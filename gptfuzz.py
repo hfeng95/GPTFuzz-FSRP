@@ -10,12 +10,14 @@ from gptfuzzer.fuzzer.mutator import (
     OpenAIMutatorGenerateSimilar, OpenAIMutatorRephrase, OpenAIMutatorShorten)
 from gptfuzzer.fuzzer.mutator import (
     LocalMutatorCrossOver,LocalMutatorExpand,LocalMutatorGenerateSimilar,
-    LocalMutatorShorten,LocalMutatorRephrase,LocalMutatorInception)
+    LocalMutatorShorten,LocalMutatorRephrase,LocalMutatorInception,
+    LocalMutatorMoreDetail,LocalMutatorMoreShots)
 from gptfuzzer.fuzzer import GPTFuzzer
 from gptfuzzer.llm import OpenAILLM, LocalVLLM, LocalLLM, PaLM2LLM, ClaudeLLM
 from gptfuzzer.utils.predict import RoBERTaPredictor
 import random
-random.seed(100)
+from datetime import datetime
+random.seed(datetime.now().timestamp())
 import logging
 httpx_logger: logging.Logger = logging.getLogger("httpx")
 # disable httpx logging
@@ -24,7 +26,9 @@ httpx_logger.setLevel(logging.WARNING)
 
 def main(args):
     initial_seed = pd.read_csv(args.seed_path)['text'].tolist()
-    prompts = pd.read_csv(args.prompts_path)['goal'].tolist()[:20]
+    prompts_list = pd.read_csv(args.prompts_path)['goal'].tolist()
+    prompts = random.sample(prompts_list,
+                            len(prompts_list) if args.sample_num < 0 else min(args.sample_num,len(prompts_list)))
 
     # openai_model = OpenAILLM(args.model_path, args.openai_key)
     mutate_model = LocalVLLM(args.model_path,gpu_memory_utilization=0.9,tensor_parallel_size=args.num_gpus)
@@ -52,8 +56,10 @@ def main(args):
             LocalMutatorGenerateSimilar(mutate_model, temperature=0.7,max_tokens=1024),
             LocalMutatorRephrase(mutate_model, temperature=0.7,max_tokens=1024),
             LocalMutatorShorten(mutate_model, temperature=0.7,max_tokens=1024),
-            LocalMutatorInception(mutate_model, temperature=0.7,max_tokens=1024)],
-            concatentate=True,
+            LocalMutatorInception(mutate_model, temperature=0.7,max_tokens=1024),
+            LocalMutatorMoreDetail(mutate_model, temperature=0.7,max_tokens=1024),
+            LocalMutatorMoreShots(mutate_model, temperature=0.7,max_tokens=1024)],
+            concatentate=False,
         ),
         select_policy=MCTSExploreSelectPolicy(),
         energy=args.energy,
@@ -88,6 +94,7 @@ if __name__ == "__main__":
     parser.add_argument("--prompts_path", type=str,
                         default="advbench.csv")
     parser.add_argument("--num_gpus", type=int, default=1)
+    parser.add_argument("--sample_num", type=int, default=-1)
     add_model_args(parser)
 
     args = parser.parse_args()
