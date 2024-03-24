@@ -9,7 +9,8 @@ def main(args):
         in_dict = json.load(f)
     out_dict = {}
     for k in in_dict:
-        out_dict[k] = in_dict[k]['children'] if 'children' in in_dict[k] else None
+        if 'children' in in_dict[k] and in_dict[k]['children']:
+            out_dict[k] = in_dict[k]['children']
     g = nx.DiGraph(out_dict)
     nx.draw(g,with_labels=True)
     plt.savefig(f'fig-{Path(args.input_path).stem}.png',format='PNG')
