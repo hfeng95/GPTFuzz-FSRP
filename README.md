@@ -5,3 +5,4 @@ the few-shot learning and role-playing capabilities of LLMs. The end goal of GPT
 with a single universal prompt template, and in the process expose vulnerabilities in its safety alignment.
 
 Link to original GPTFuzzer repo: https://github.com/sherdencooper/GPTFuzz
+Link to adversarial questions used in this experiment: https://github.com/llm-attacks/llm-attacks/blob/main/data/advbench/harmful_behaviors.csv
